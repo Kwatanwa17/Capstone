@@ -1,4 +1,4 @@
-memory.limit(size = 15000)
+memory.limit(size = 20000)
 setwd("C:/Users/Keita/Desktop/DataScienceCapstone")
 
 require(quanteda)
@@ -33,16 +33,20 @@ txtdata <- lapply(filelist, sReadLines)
 
 #Load as a List
 
+sampling_corpus <- function(x) {
+  set.seed(12345)
+  corpus_sample(x, nrow(x$documents)/10)
+}
+
 merge_corpus <- lapply(txtdata, corpus)
-data_corpus <- merge_corpus[[1]] + merge_corpus[[2]] + merge_corpus[[3]]
-#Sampling the corpus. Use 1/10 of the data because of the CPU capacity.
-set.seed(12345)
-test_corpus <- corpus_sample(data_corpus, nrow(data_corpus$documents)/10)
-test_token_1gram <- tokens(test_corpus, remove_numbers = TRUE, remove_punct = TRUE,
-                     remove_symbols = TRUE, remove_separators = TRUE, remove_hyphens = TRUE)
+test_corpus <- lapply(merge_corpus, sampling_corpus)
+test_corpus <- test_corpus[[1]] + test_corpus[[2]] + test_corpus[[3]]
+
+#Sampling the corpus. Use 1/5 of the data because of the CPU capacity.
+test_token_1gram <- tokens(test_corpus, remove_numbers = TRUE, remove_punct = TRUE, remove_url = TRUE,
+                     remove_symbols = TRUE, remove_separators = TRUE, remove_hyphens = TRUE, remove_twitter = TRUE)
 rm(txtdata)
 rm(merge_corpus)
-rm(data_corpus)
 rm(test_corpus)
 # 
 # DaMergeCorpus
@@ -107,62 +111,68 @@ test_token_5gram <- tokens_ngrams(test_token_1gram, n = 5)
 # en_US_dfm <- dfm_remove(en_US_dfm, "rt")
 # en_US_dfm <- dfm_select(en_US_dfm, min_nchar = 2)
 
-test_dfm_1gram <- dfm(test_token_1gram)
-test_dfm_2gram <- dfm(test_token_2gram)
-test_dfm_3gram <- dfm(test_token_3gram)
-test_dfm_4gram <- dfm(test_token_4gram)
-test_dfm_5gram <- dfm(test_token_5gram)
-
-
-rm(
-  list = c("test_token_1gram", "test_token_2gram", "test_token_3gram", "test_token_4gram", "test_token_5gram")
-)
-
-test_freq_1gram <- textstat_frequency(test_dfm_1gram)
-test_freq_2gram <- textstat_frequency(test_dfm_2gram)
-test_freq_3gram <- textstat_frequency(test_dfm_3gram)
-test_freq_4gram <- textstat_frequency(test_dfm_4gram)
-test_freq_5gram <- textstat_frequency(test_dfm_5gram)
-
-rm(
-  list = c("test_dfm_1gram", "test_dfm_2gram", "test_dfm_3gram", "test_dfm_4gram", "test_dfm_5gram")
-)
+# test_dfm_1gram <- dfm(test_token_1gram) %>% dfm_trim(min_termfreq = 2) %>% textstat_frequency()
+# test_dfm_2gram <- dfm(test_token_2gram)
+# test_dfm_3gram <- dfm(test_token_3gram)
+# test_dfm_4gram <- dfm(test_token_4gram)
+# test_dfm_5gram <- dfm(test_token_5gram)
+# 
+# 
+# rm(
+#   list = c("test_token_1gram", "test_token_2gram", "test_token_3gram", "test_token_4gram", "test_token_5gram")
+# )
+# 
+# test_freq_1gram <- textstat_frequency(test_dfm_1gram)
+# test_freq_2gram <- textstat_frequency(test_dfm_2gram)
+# test_freq_3gram <- textstat_frequency(test_dfm_3gram)
+# test_freq_4gram <- textstat_frequency(test_dfm_4gram)
+# test_freq_5gram <- textstat_frequency(test_dfm_5gram)
+# 
+# rm(
+#   list = c("test_dfm_1gram", "test_dfm_2gram", "test_dfm_3gram", "test_dfm_4gram", "test_dfm_5gram")
+# )
 
 #Calculate the probability of each n-gram
 
-test_freq_1gram <- test_freq_1gram %>% 
+test_freq_1gram <-dfm(test_token_1gram) %>% 
+  dfm_trim(min_termfreq = 2) %>% 
+  textstat_frequency() %>% 
   select(feature, frequency) %>% 
   data.table() %>% 
-  mutate(prob = frequency/sum(test_freq_1gram[,2]))
+  mutate(prob = frequency/sum(frequency))
 
-test_freq_2gram <- test_freq_2gram %>% 
+test_freq_2gram <-dfm(test_token_2gram) %>% 
+  dfm_trim(min_termfreq = 2) %>% 
+  textstat_frequency() %>% 
   select(feature, frequency) %>% 
   data.table() %>% 
-  mutate(prob = frequency/sum(test_freq_2gram[,2]))
+  mutate(prob = frequency/sum(frequency))
 
-test_freq_3gram <- test_freq_3gram %>% 
+test_freq_3gram <-dfm(test_token_3gram) %>% 
+  dfm_trim(min_termfreq = 2) %>% 
+  textstat_frequency() %>% 
   select(feature, frequency) %>% 
   data.table() %>% 
-  mutate(prob = frequency/sum(test_freq_3gram[,2]))
+  mutate(prob = frequency/sum(frequency))
 
-test_freq_4gram <- test_freq_4gram %>% 
+test_freq_4gram <-dfm(test_token_4gram) %>% 
+  dfm_trim(min_termfreq = 2) %>% 
+  textstat_frequency() %>% 
   select(feature, frequency) %>% 
   data.table() %>% 
-  mutate(prob = frequency/sum(test_freq_4gram[,2]))
+  mutate(prob = frequency/sum(frequency))
 
-test_freq_5gram <- test_freq_5gram %>% 
+test_freq_5gram <-dfm(test_token_5gram) %>% 
+  dfm_trim(min_termfreq = 2) %>% 
+  textstat_frequency() %>% 
   select(feature, frequency) %>% 
   data.table() %>% 
-  mutate(prob = frequency/sum(test_freq_5gram[,2]))
-
-test_dt <- test_freq_5gram 
-test_dt_head <- head(test_dt,100)
-
-pred_sentence <- "The guy in front of me just bought a pound of bacon, a bouquet, and a case of"
+  mutate(prob = frequency/sum(frequency))
 
 cleanSentente <- function(sentence){
   pred_token <- tokens(sentence, remove_numbers = TRUE, remove_punct = TRUE,
                        remove_symbols = TRUE, remove_separators = TRUE, remove_hyphens = TRUE)
+  pred_token <- tokens_tolower(pred_token)
   pred_token <- as.vector(unlist(pred_token))
   final_4words <- pred_token[(length(pred_token)-3):length(pred_token)]
   four <-  str_c(final_4words, collapse = "_")
@@ -172,45 +182,57 @@ cleanSentente <- function(sentence){
   c(four, three, two, one)
 }
 
-lookup <- cleanSentente(pred_sentence)
-
-sentence <- pred_sentence
-
 predNextWord <- function(sentence) {
   lookup <- cleanSentente(sentence)
   #Strating with 5gram
   result <- subset(test_freq_5gram, grepl(paste("^", lookup[1], "_", sep =""), test_freq_5gram$feature))
-  if (max(result$frequency) > 10) {
+  if (max(result$frequency) > 30) {
     result
   } else {
     #Check 4gram
     result <- subset(test_freq_4gram, grepl(paste("^", lookup[2], "_", sep =""), test_freq_4gram$feature))
-    if (max(result$frequency) > 20) {
+    if (max(result$frequency) > 30) {
       head(result,20)
     } else {
       #Check 3gram
       result <- subset(test_freq_3gram, grepl(paste("^", lookup[3], "_", sep =""), test_freq_3gram$feature))
-      if (max(result$frequency) > 20) {
+      if (max(result$frequency) > 100) {
         result
       } else {
         #check 2gram
         result <- subset(test_freq_2gram, grepl(paste("^", lookup[4], "_", sep =""), test_freq_2gram$feature))
-        if (max(result$frequency) > 20) {
+        if (max(result$frequency) > 100) {
           result
         } else {
-          print("Unseen word")
+          head(test_freq_1gram,100)
         }
       }
     }
   }
 }
 
+checkWord <- function(df, word) {
+  subset(df, grepl(word, df$feature))
+}
+   
 
-lookup <- subset(test_dt, grepl("^tsasa_end_of_the", test_dt$feature))
-nrow(lookup) == 0
+test_sentence <- "I like how the same people are in almost all of Adam Sandler's"
+test_df <- predNextWord(test_sentence)
 
+test_words <- c("novels","stories", "pictures", "movies")
+
+for (x in 1:length(test_words)) {
+  result = checkWord(test_df, test_words[x])
+  print(test_words[x])
+  print(result)
+}
+
+for (x in 1:length(test_words)) {
+  result = checkWord(test_freq_1gram, test_words[x])
+  print(test_words[x])
+  print(result)
   
-
+}
 
 
 # firstStirng <- function(string){
