@@ -1,0 +1,170 @@
+---
+title: "Milestone report"
+output: 
+  html_document:
+author: Kwatanwa17
+date: October 15 2018
+---
+
+```{r setoptions, echo=FALSE, message=FALSE, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE, error = FALSE, message = FALSE, echo = TRUE)
+memory.limit(15000)
+options(scipen=100)
+```
+
+```{r setup, message=FALSE}
+#Load packeges
+require(quanteda)
+require(readtext)
+require(ggplot2)
+```
+
+```{r, echo=FALSE}
+setwd("C:/Users/Keita/Desktop/DataScienceCapstone")
+```
+
+## Summary
+In this report, we introduce the explatory text analysis of three text files provided by the Swiftkey. Each text file comes from a different web page. There are three text classes: blog, news and twitter. We started with word and line counts for each of the data sets. Then, we conducted frequency and co-occurrence analysis for each text data. 
+
+## Preprocesament
+```{r, error=FALSE, warning=FALSE}
+filelist <- list.files(path = getwd(), pattern = ".*.txt")
+filenames <- gsub(pattern = "^en_US.", replacement = "", filelist)
+filenames <- gsub(pattern = ".txt$", replacement = "", filenames)
+```
+
+```{r, message=FALSE, error=FALSE, warning=FALSE}
+#Reading lines and creating corpuses 
+blog_corpus <- readLines(filelist[1], encoding="UTF-8") %>% 
+  iconv("UTF-8", "ASCII", sub = "") %>% 
+  corpus()
+
+news_corpus <- readLines(filelist[2], encoding="UTF-8") %>% 
+  iconv("UTF-8", "ASCII", sub = "") %>% 
+  corpus()
+
+twitter_corpus <- readLines(filelist[3], encoding="UTF-8") %>% 
+  iconv("UTF-8", "ASCII", sub = "") %>% 
+  corpus()
+
+```
+
+```{r}
+#Toknize the corpuses
+blog_token <- tokens(blog_corpus, remove_numbers = TRUE, remove_punct = TRUE,
+                     remove_symbols = TRUE, remove_separators = TRUE, remove_twitter = TRUE,
+                     remove_hyphens = TRUE, remove_url = TRUE)
+
+news_token <- tokens(news_corpus, remove_numbers = TRUE, remove_punct = TRUE,
+                     remove_symbols = TRUE, remove_separators = TRUE, remove_twitter = TRUE,
+                     remove_hyphens = TRUE, remove_url = TRUE)
+
+twitter_token <- tokens(twitter_corpus, remove_numbers = TRUE, remove_punct = TRUE,
+                     remove_symbols = TRUE, remove_separators = TRUE, remove_twitter = TRUE,
+                     remove_hyphens = TRUE, remove_url = TRUE)
+```
+
+```{r}
+#Create dfms
+blog_dfm <- dfm(blog_token, stem = TRUE, remove = stopwords("en")) 
+news_dfm <- dfm(news_token, stem = TRUE, remove = stopwords("en"))
+twitter_dfm <- dfm(twitter_token, stem = TRUE, remove = stopwords("en"))
+```
+
+## Basic analysis
+```{r}
+#Number of lines for each document
+line_counts <- c(ndoc(blog_corpus), ndoc(news_corpus), ndoc(twitter_corpus))
+ggplot(data.frame(name = filenames, line_counts = line_counts), 
+       aes(name, line_counts)) +
+  geom_bar(stat = "identity", fill = c("#34A853", "#EA4335", "#00ACED")) +
+  labs(title="Number of lines of corpuses", x="Corpus", y="Number of lines")
+```
+
+```{r}
+#Word counts
+word_counts <- c(sum(ntoken(blog_token)), sum(ntoken(news_token)), sum(ntoken(twitter_token)))
+ggplot(data.frame(name = filenames, word_counts = word_counts), aes(name, word_counts)) +
+  geom_bar(stat = "identity",  fill = c("#34A853", "#EA4335", "#00ACED")) +
+  labs(title="Word counts", x="Corpus", y="Counts")
+```
+
+```{r}
+#Mean length of sentences
+mean_counts <- c(mean(ntoken(blog_token)), mean(ntoken(news_token)), mean(ntoken(twitter_token)))
+ggplot(data.frame(name = filenames, mean_counts = mean_counts), aes(name, mean_counts)) +
+  geom_bar(stat = "identity", fill = c("#34A853", "#EA4335", "#00ACED")) +
+  labs(title="Mean length of sentences", x="Corpus", y="Word counts")
+```
+
+## Word clouds
+```{r}
+#Blog data
+textplot_wordcloud(blog_dfm, max_words = 300, color = "#34A853")
+```
+
+```{r}
+#News data
+textplot_wordcloud(news_dfm, max_words = 300, color = "#EA4335")
+```
+
+```{r}
+#Twitter data
+textplot_wordcloud(twitter_dfm, max_words = 300, color = "#00ACED")
+```
+
+## Plot the 20 most popular words in each corpus
+```{r}
+blog_top_20_vec <- topfeatures(blog_dfm, 20)
+blog_top_20_df <- data.frame(keyname = names(blog_top_20_vec), frequency = (blog_top_20_vec), row.names = NULL)
+blog_top_20_barplot <- ggplot(blog_top_20_df, aes(reorder(keyname, -frequency), frequency)) +
+  geom_bar(stat = "identity", fill = "#34A853") +
+  labs(title="Top 20 features in blog data", x="Word", y="Frequency")
+blog_top_20_barplot
+```
+
+```{r}
+news_top_20_vec <- topfeatures(news_dfm, 20)
+news_top_20_df <- data.frame(keyname = names(news_top_20_vec), frequency = (news_top_20_vec), row.names = NULL)
+news_top_20_barplot <- ggplot(news_top_20_df, aes(reorder(keyname, -frequency), frequency)) +
+  geom_bar(stat = "identity", fill = "#EA4335") +
+  labs(title="Top 20 features in news data", x="Word", y="Frequency")
+news_top_20_barplot
+```
+
+```{r}
+twitter_top_20_vec <- topfeatures(twitter_dfm, 20)
+twitter_top_20_df <- data.frame(keyname = names(twitter_top_20_vec), frequency = (twitter_top_20_vec), row.names = NULL)
+twitter_top_20_barplot <- ggplot(twitter_top_20_df, aes(reorder(keyname, -frequency), frequency)) +
+  geom_bar(stat = "identity", fill = "#00ACED") +
+  labs(title="Top 20 features in twitter data", x="Word", y="Frequency")
+twitter_top_20_barplot
+```
+
+## Word network of co-occurrences
+```{r}
+blog_fcm <- fcm(blog_dfm)
+news_fcm <- fcm(news_dfm)
+twitter_fcm <- fcm(twitter_dfm)
+```
+
+```{r}
+#Blog data
+blog_feat <- names(topfeatures(blog_fcm, 100))
+blog_col <- fcm_select(blog_fcm, blog_feat)
+textplot_network(blog_col, min_freq = 0.95, edge_size = 0.5, edge_color = "#34A853")
+```
+
+```{r}
+#News data
+news_feat <- names(topfeatures(news_fcm, 100))
+news_col <- fcm_select(news_fcm, news_feat)
+textplot_network(news_col, min_freq = 0.95, edge_size = 0.5, edge_color = "#EA4335")
+```
+
+```{r}
+#Twitter data
+twitter_feat <- names(topfeatures(twitter_fcm, 100))
+twitter_col <- fcm_select(twitter_fcm, twitter_feat)
+textplot_network(twitter_col, min_freq = 0.95, edge_size = 0.5, edge_color = "#00ACED")
+```
