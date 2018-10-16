@@ -7,7 +7,7 @@ require(readtext)
 require(data.table)
 require(dplyr)
 require(stringr)
-require(saveRDS)
+
 
 filelist <- list.files(path = "C:/Users/Keita/OneDrive - Universitat de Barcelona/DataScienceCapstone/en_US", pattern = ".*.txt")
 # filenames <- gsub(pattern = "^en_US.", replacement = "", filelist)
@@ -233,47 +233,69 @@ rm(train_corpus)
 #   data.table() %>% 
 #   mutate(prob = frequency/sum(frequency))
 
-cleanSentente <- function(sentence){
+cleanSentence <- function(sentence){
   pred_token <- tokens(sentence, remove_numbers = TRUE, remove_punct = TRUE,
                        remove_symbols = TRUE, remove_separators = TRUE, remove_hyphens = TRUE)
   pred_token <- tokens_tolower(pred_token)
   pred_token <- as.vector(unlist(pred_token))
+  if (length(pred_token) > 3) {
   final_4words <- pred_token[(length(pred_token)-3):length(pred_token)]
   four <-  str_c(final_4words, collapse = "_")
   three <-  str_c(final_4words[2:4], collapse = "_")
   two <-  str_c(final_4words[3:4], collapse = "_")
   one <-  final_4words[4]
   c(four, three, two, one)
+  } else c(NULL, NULL, NULL, NULL)
+}
+
+sepSentence <- function(sentence){
+  pred_token <- tokens(sentence, remove_numbers = TRUE, remove_punct = TRUE,
+                       remove_symbols = TRUE, remove_separators = TRUE, remove_hyphens = TRUE)
+  pred_token <- tokens_tolower(pred_token)
+  pred_token <- as.vector(unlist(pred_token))
+  first <- str_c(pred_token[1:length(pred_token)-1], collapse = " ")
+  final <- pred_token[length(pred_token)]
+  c(first, final)
 }
 
 #CREATE TWO BACK MODEL
 #1 SIMPLE ONE
 #2 ALFA MODEL ALPHA = 0.5??
 
+#else if!
+sentence <- test_sentence
 #1rm(fr)
 predNextWord <- function(sentence) {
-  lookup <- cleanSentente(sentence)
+  lookup <- cleanSentence(sentence)
   #Strating with 5gram
   result_5gram <- subset(freq_5gram, grepl(paste("^", lookup[1], "_", sep =""), freq_5gram$feature))
   if (nrow(result_5gram) != 0) {
-    result_5gram
+    result <- str_split(result_5gram[, 1][1], pattern = "_")
+    result <- as.vector(result[[1]])
+    result[5]
   } else {
     #Check 4gram
     result_4gram <- subset(freq_4gram, grepl(paste("^", lookup[2], "_", sep =""), freq_4gram$feature))
     if (nrow(result_4gram) != 0) {
-      result_4gram
+      result <- str_split(result_4gram[, 1][1], pattern = "_")
+      result <- as.vector(result[[1]])
+      result[4]
     } else {
       #Check 3gram
       result_3gram <- subset(freq_3gram, grepl(paste("^", lookup[3], "_", sep =""), freq_3gram$feature))
       if (nrow(result_3gram) != 0) {
-        result_3gram
+        result <- str_split(result_3gram[, 1][1], pattern = "_")
+        result <- as.vector(result[[1]])
+        result[3]
       } else {
         #check 2gram
         result_2gram <- subset(freq_2gram, grepl(paste("^", lookup[4], "_", sep =""), freq_2gram$feature))
         if (nrow(result_2gram) != 0) {
-          result_2gram
+          result <- str_split(result_2gram[, 1][1], pattern = "_")
+          result <- as.vector(result[[1]])
+          result[2]
         } else {
-          head(freq_1gram, 50)
+          freq_1gram[, 1][1]
         }
       }
     }
@@ -311,27 +333,40 @@ predNextWord2 <- function(sentence) {
   }
 }
 
-checkWord <- function(df, word) {
-  subset(df, grepl(paste(word, "$", sep =""), df$feature))
-}
+# checkWord <- function(df, word) {
+#   subset(df, grepl(paste(word, "$", sep =""), df$feature))
+# }
 
 test_sentence <- "Ifm thankful my childhood was filled with imagination and bruises from playing"
-test_df <- predNextWord(test_sentence)
+predNextWord(test_sentence)
 
-test_words <- c("weekly","outside", "inside", "daily")
+test_sentences <- apply(test_corpus$documents, 1, sepSentence)
+a <- head(test_sentences, 5)
 
-for (x in 1:length(test_words)) {
-  result = checkWord(test_df, test_words[x])
-  print(test_words[x])
-  print(result)
-}
+b <- unlist(test_sentences)
+first_index <- seq(1, length(b), 2)
 
-for (x in 1:length(test_words)) {
-  result = checkWord(freq_1gram, test_words[x])
-  print(test_words[x])
-  print(result)
-  
-}
+first <- b[first_index]
+last <- b[-first_index]
+
+test_df <- data.frame(test_sentences)
+
+pred_word <- sapply(first[1:30], predNextWord)
+
+sum(pred_word == last[1:30])
+# 
+# for (x in 1:length(test_words)) {
+#   result = checkWord(test_df, test_words[x])
+#   print(test_words[x])
+#   print(result)
+# }
+# 
+# for (x in 1:length(test_words)) {
+#   result = checkWord(freq_1gram, test_words[x])
+#   print(test_words[x])
+#   print(result)
+#   
+# }
 
 
 # firstStirng <- function(string){
