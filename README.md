@@ -1,4 +1,4 @@
-# Capstone
+# Data Science Capstone Coursera
 
 ## Overview
 This is the repository for Data Science Capstone offered by Coursera.
