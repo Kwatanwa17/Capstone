@@ -1,7 +1,7 @@
 # Data Science Capstone Coursera
 
 ## Overview
-This is the repository for Data Science Capstone offered by Coursera. For more information of the app, please read Presentation.md[https://github.com/Kwatanwa17/Capstone/blob/master/Presentation.md]
+This is the repository for Data Science Capstone offered by Coursera. For more information of the app, please read [Presentation.md](https://github.com/Kwatanwa17/Capstone/blob/master/Presentation.md)
 
 ## Repository description
 - Shinyapp: the code of shiny application for the final course project 
